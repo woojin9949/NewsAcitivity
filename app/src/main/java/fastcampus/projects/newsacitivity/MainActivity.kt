@@ -7,9 +7,11 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.tickaroo.tikxml.TikXml
 import com.tickaroo.tikxml.retrofit.TikXmlConverterFactory
 import fastcampus.projects.Adapter.NewsAdapter
-import fastcampus.projects.data.NewsRss
+import fastcampus.projects.model.NewsRss
+import fastcampus.projects.model.transform
 import fastcampus.projects.newsacitivity.databinding.ActivityMainBinding
 import fastcampus.projects.service.NewsService
+import org.jsoup.Jsoup
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -45,9 +47,25 @@ class MainActivity : AppCompatActivity() {
         val newsService = retrofit.create(NewsService::class.java)
         newsService.mainFeed().enqueue(object : Callback<NewsRss> {
             override fun onResponse(call: Call<NewsRss>, response: Response<NewsRss>) {
+
+                //jsoup을 통해 해당 링크에 헤더에 있는 (meta태그)의 property가  og:title과 og:image 정보를 가져올 수 있다
                 if (response.isSuccessful) {
-                    Log.e("MainActivity", "${response.body()?.channel?.items}")
-                    newsAdapter.submitList(response.body()?.channel?.items.orEmpty())
+                    //response로 받는 객체들(NewsItem)을 NewsModel객체로 transform (NewsModel에 썼음)
+                    val list = response.body()?.channel?.items.orEmpty().transform()
+                    newsAdapter.submitList(list)
+                    //링크 잘 나옴
+                    list.forEach {
+                        Log.d("Testt", "" + it.link)
+                        Thread {
+                            val jsoup = Jsoup.connect(it.link).get()
+                            val elements = jsoup.select("meta[property^=og:]")
+                            val ogImageNode = elements.find { node ->
+                                node.attr("property") == "og:image"
+                            }
+                            it.imageUrl = ogImageNode?.attr("content")
+                        }.start()
+                    }
+
                 }
             }
 
