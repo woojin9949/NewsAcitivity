@@ -1,4 +1,4 @@
-package fastcampus.projects.data
+package fastcampus.projects.model
 
 import com.tickaroo.tikxml.annotation.Element
 import com.tickaroo.tikxml.annotation.PropertyElement
